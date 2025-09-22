@@ -1,0 +1,44 @@
+tiers:
+  wrists:
+    - annotation_x
+    - annotation_y
+    - direction_x
+    - direction_y 
+    - direction_x_thr
+    - direction_y_thr
+    - distance
+    - distance_x
+    - distance_y
+    - zones
+  fingers:
+    - annotation_x
+    - annotation_y
+    - direction_x
+    - direction_y
+  eyelid:
+    - annotation_y
+  custom:
+    - annotation_x
+    - direction_x
+
+wrists:
+  left: ${tiers.wrists}
+  right: ${tiers.wrists}
+
+fingers:
+  right:
+    thumb: ${tiers.fingers}
+    index: ${tiers.fingers}
+    middle: ${tiers.fingers}
+    ring: ${tiers.fingers}
+    little: ${tiers.fingers}
+  left:
+    thumb: ${tiers.fingers}
+    index: ${tiers.fingers}
+    middle: ${tiers.fingers}
+    ring: ${tiers.fingers}
+    little: ${tiers.fingers}
+
+eyelid:
+  left: ${tiers.eyelid}
+  right: ${tiers.eyelid}

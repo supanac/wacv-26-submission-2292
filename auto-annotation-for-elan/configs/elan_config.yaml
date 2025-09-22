@@ -1,0 +1,91 @@
+tiers:
+  - Left Wrist Vertical Direction Threshold
+  - Left Wrist Lateral Direction Threshold
+  - Right Wrist Vertical Direction Threshold
+  - Right Wrist Lateral Direction Threshold
+  # - Left Wrist Vertical Zone
+  # - Left Wrist Lateral Zone
+  # - Right Wrist Vertical Zone
+  # - Right Wrist Lateral Zone
+  # - Left Wrist Zone
+  # - Right Wrist Zone
+  - Left Wrist Distance
+  # - Left Wrist Distance Lateral
+  # - Left Wrist Distance Vertical
+  - Right Wrist Distance
+  # - Right Wrist Distance Lateral
+  # - Right Wrist Distance Vertical
+  # - Right Eye Blinking
+  # - Left Eye Blinking
+  # - Left Index Finger Direction Lateral Auto
+  # - Left Index Finger Direction Vertical Auto
+  # - Left Middle Finger Direction Lateral Auto
+  # - Left Middle Finger Direction Vertical Auto
+  # - Left Ring Finger Direction Lateral Auto
+  # - Left Ring Finger Direction Vertical Auto
+  # - Left Little Finger Direction Lateral Auto
+  # - Left Little Finger Direction Vertical Auto
+  # - Left Thumb Direction Lateral Auto
+  # - Left Thumb Direction Vertical Auto
+  # - Right Index Finger Direction Lateral Auto
+  # - Right Index Finger Direction Vertical Auto
+  # - Right Middle Finger Direction Lateral Auto
+  # - Right Middle Finger Direction Vertical Auto
+  # - Right Ring Finger Direction Lateral Auto
+  # - Right Ring Finger Direction Vertical Auto
+  # - Right Little Finger Direction Lateral Auto
+  # - Right Little Finger Direction Vertical Auto
+  # - Right Thumb Direction Lateral Auto
+  # - Right Thumb Direction Vertical Auto
+  # - Left Index Finger Vertical Auto
+  # - Left Index Finger Lateral Auto
+  # - Left Middle Finger Vertical Auto
+  # - Left Middle Finger Lateral Auto
+  # - Left Ring Finger Vertical Auto
+  # - Left Ring Finger Lateral Auto
+  # - Left Little Finger Vertical Auto
+  # - Left Little Finger Lateral Auto
+  # - Left Thumb Vertical Auto
+  # - Left Thumb Lateral Auto
+  # - Right Index Finger Vertical Auto
+  # - Right Index Finger Lateral Auto
+  # - Right Middle Finger Vertical Auto
+  # - Right Middle Finger Lateral Auto
+  # - Right Ring Finger Vertical Auto
+  # - Right Ring Finger Lateral Auto
+  # - Right Little Finger Vertical Auto
+  # - Right Little Finger Lateral Auto
+  # - Right Thumb Vertical Auto
+  # - Right Thumb Lateral Auto
+
+timeseries:
+  - Right Wrist Velocity
+  - Left Wrist Velocity
+  - Right Wrist Lateral Position
+  - Right Wrist Vertical Position
+  - Left Wrist Lateral Position
+  - Left Wrist Vertical Position
+  # - Right Eyebrow Vertical Position
+  # - Left Eyebrow Vertical Position
+  # - Right Eyelid Vertical Position    # Added for Right Eyebrow
+  # - Left Eyelid Vertical Position    # Added for Right Eyebrow
+  # - Right Index Finger Lateral Position
+  # - Right Index Finger Vertical Position
+  # - Right Middle Finger Lateral Position
+  # - Right Middle Finger Vertical Position
+  # - Right Ring Finger Lateral Position
+  # - Right Ring Finger Vertical Position
+  # - Right Little Finger Lateral Position
+  # - Right Little Finger Vertical Position
+  # - Right Thumb Lateral Position
+  # - Right Thumb Vertical Position
+  # - Left Index Finger Lateral Position
+  # - Left Index Finger Vertical Position
+  # - Left Middle Finger Lateral Position
+  # - Left Middle Finger Vertical Position
+  # - Left Ring Finger Lateral Position
+  # - Left Ring Finger Vertical Position
+  # - Left Little Finger Lateral Position
+  # - Left Little Finger Vertical Position
+  # - Left Thumb Lateral Position
+  # - Left Thumb Vertical Position
