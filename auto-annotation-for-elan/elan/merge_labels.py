@@ -1,4 +1,13 @@
-def merge_label(label):
+def merge_label(label: str) -> str:
+    """
+    Merge and simplify compound spatial labels into consolidated directional labels.
+    
+    Args:
+        label (str): Space-separated label string with X and Y directional components.
+    
+    Returns:
+        str: Simplified directional label string, or None if no match found.
+    """
     label_x, label_y = label.split(" ")
     if (
         (label_x == "Right" and label_y == "CentreUp")

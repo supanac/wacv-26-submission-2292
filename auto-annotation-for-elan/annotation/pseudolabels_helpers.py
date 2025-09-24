@@ -1,7 +1,7 @@
 import numpy as np
 
 from constants import left_hand_fingers, right_hand_fingers
-from datatypes import NumpyArray
+from datatypes import NumpyArray, SceneList
 from elan.finger_indices import get_finger_indices
 from .annotation_extractors import (
     extract_wrists_annotation, extract_wrists_xy_annotation,
@@ -10,38 +10,39 @@ from .annotation_extractors import (
 )
 
 
-def calculate_pseudolabels(
-        annotation_tier: str, 
-        axis: str,
-        data: NumpyArray, 
-        scenes: list) -> dict:
-    """ Calculates pseudo-labels for a requested tier.
-
-        Returns pseudo-annotation for a requested keypoint.
-        If requested a spatial annotation for wrists, returns
-        two keys, {frame_annotation, annotation_xy}, otherwise returns
-        three keys {frame_annotation, annotation_x, annotation_y}.
-        frame_annotation represent numerical values which are transformed
-        to actual pseudo-labels through extract_[KEYPOINT]_annotation.
-        After processing numerical values to pseudo-labels, 
-        the latter is stored in \"annotation_xy\" key or
-        in a pair of keys, \"annotation_x\", \"annotation_y\".
-
+def calculate_pseudolabels(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList) -> dict:
+    """
+    Calculate labels for a specific annotation tier using appropriate body part handlers.
+    
+    This function processes keypoint data through a two-step pipeline:
+    1. Computes raw numerical frame annotations via handle_frame_annotation
+    2. Converts numerical values to interpretable labels using body-part-specific 
+       extract_*_annotation functions (e.g., extract_wrists_annotation, 
+       extract_fingers_annotation, extract_eyelid_annotation)
+    
     Args:
-        annotation_ties: The name of a tier.
-        data: Coordinates of keypoints.
-        scenes: All scenes for a given video.
-
+        annotation_tier (str): Name of the annotation tier identifying body part and type
+            (e.g., "left_wrist_x", "right_finger_angle", "left_eyelid").
+        axis (str): Axis for calculation:
+            - 'x' or 'y': Single-axis processing for coordinate-based zones
+            - 'xy': Combined processing for spatial zones using both coordinates
+        data (NumpyArray): Keypoint coordinate data array.
+        scenes (SceneList): List of scene frame ranges for processing.
+    
     Returns:
-        The keys in the dictionary depend on the annotation_tier:
-            - If annotation_tier contains "wrist_xy", returns 
-            {"frame_annotation": frame_annotation, "annotation_xy": annotation_xy}.
-            - Otherwise returns 
-            {"frame_annotation": frame_annotation, "annotation_x": annotation_x, "annotation_y": annotation_y}.
-
+        dict: Dictionary containing annotation data:
+            - "frame_annotation": Raw numerical values from handle_frame_annotation.
+              For spatial zones ("zones" in tier name), this is a tuple of 
+              (frame_annotation_x, frame_annotation_y). For single-axis processing,
+              this is a single array.
+            - "annotation": Human-readable labels processed by the appropriate 
+              extract_*_annotation function based on the body part type.
+    
     Note:
-        See extract_[KEYPOINT]_annotation for details on annotation 
-        return type.
+        Regular wrist annotations convert single coordinate (horizontal or vertical) 
+        to zones, while "zones" annotations convert both horizontal and vertical 
+        coordinates to spatial zones. Eyebrow annotations are currently not used 
+        in the pipeline but the handler exists for future implementation.
     """
     if axis == "xy":
         frame_annotation_x = handle_frame_annotation(annotation_tier, "x", data, scenes)
@@ -65,13 +66,25 @@ def calculate_pseudolabels(
         # We do have timeseries for eyebrows. See elan_helpers.py.
         annotation = extract_eyebrows_annotation(frame_annotation, axis)
     elif "eyelid" in annotation_tier:
-        annotation = extract_eyelid_annotation(frame_annotation, axis)
+        annotation = extract_eyelid_annotation(frame_annotation)
     return {
         "frame_annotation": frame_annotation,
         "annotation": annotation
     }
 
-def handle_frame_annotation(annotation_tier: str, axis: str, data: NumpyArray, scenes: list) -> tuple:
+def handle_frame_annotation(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList) -> NumpyArray:
+    """
+    Route annotation processing to appropriate handler based on body part type.
+    
+    Args:
+        annotation_tier (str): Annotation tier name identifying body part.
+        axis (str): Axis for calculation ('x' or 'y').
+        data (NumpyArray): Complete keypoint data array.
+        scenes (SceneList): List of scene frame ranges.
+    
+    Returns:
+        NumpyArray: Processed annotation data from the appropriate handler function.
+    """
     if "left_wrist" in annotation_tier or "right_wrist" in annotation_tier:
         calculate_func = handle_wrists
         data = data["pose_keypoints_2d_norm"]
@@ -89,12 +102,19 @@ def handle_frame_annotation(annotation_tier: str, axis: str, data: NumpyArray, s
         data = data["face_keypoints_2d"]
     return calculate_func(annotation_tier, axis, data, scenes)
 
-def handle_wrists(
-        annotation_tier: str, 
-        axis: str, 
-        data: NumpyArray, 
-        scenes: list
-        ) -> NumpyArray:
+def handle_wrists(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList) -> NumpyArray:
+    """
+    Calculate wrist position labels relative to neck and shoulder references across scenes.
+    
+    Args:
+        annotation_tier (str): Annotation tier name identifying wrist side.
+        axis (str): Axis for position calculation ('x' or 'y').
+        data (NumpyArray): Pose keypoint data array.
+        scenes (SceneList): Scene ranges for processing.
+    
+    Returns:
+        NumpyArray: Position labels for each frame, with -1 for invalid frames.
+    """
     joint_ind = 4 if "right" in annotation_tier else 7
     frames_annotation = np.ones(len(data)) * (-1)
     for start_frame, end_frame in scenes:
@@ -134,12 +154,19 @@ def handle_wrists(
             frames_annotation[frame_ind] = frame_annotation
     return frames_annotation
 
-def handle_angles(
-        annotation_tier: str, 
-        axis: str, 
-        data: NumpyArray, 
-        scenes=None
-        ) -> NumpyArray:
+def handle_angles(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList=None) -> NumpyArray:
+    """
+    Calculate finger angles from base to tip joint vectors.
+    
+    Args:
+        annotation_tier (str): Annotation tier name identifying finger.
+        axis (str): Axis parameter (not used in angle calculation).
+        data (NumpyArray): Hand keypoint data array.
+        scenes (SceneList, optional): Scene ranges (not used in this function).
+    
+    Returns:
+        NumpyArray: Finger angles in degrees, with 1000 for invalid frames.
+    """
     finger_ind = get_finger_indices(annotation_tier)
     base_joint_ind, tip_joint_ind = finger_ind
     angles = np.ones(len(data)) * -1
@@ -152,21 +179,35 @@ def handle_angles(
         )
     return angles
 
-def handle_eyebrows(
-        annotation_tier: str, 
-        axis: str, 
-        data: NumpyArray, 
-        scenes: list
-        ) -> tuple:
+def handle_eyebrows(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList=None) -> NumpyArray:
+    """
+    Extract eyebrow vertical position from face keypoints.
+    
+    Args:
+        annotation_tier (str): Annotation tier name identifying eyebrow side.
+        axis (str): Axis parameter (not used in eyebrow extraction).
+        data (NumpyArray): Face keypoint data array.
+        scenes (SceneList, optional): Scene ranges (not used in this function).
+    
+    Returns:
+        NumpyArray: Vertical coordinates of the specified eyebrow keypoint.
+    """
     joint_ind = 19 if "right" in annotation_tier else 24
     return data[:, joint_ind, 1]
 
-def handle_eyelid(
-        annotation_tier: str,
-        axis: str,
-        data: NumpyArray,
-        scenes: list
-        ) -> tuple:  
+def handle_eyelid(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList) -> NumpyArray:
+    """
+    Classify eyelid states (open, blink, closed) based on upper and lower eyelid positions across scenes.
+    
+    Args:
+        annotation_tier (str): Annotation tier name identifying eyelid side.
+        axis (str): Axis parameter (not used in eyelid classification).
+        data (NumpyArray): Face keypoint data array.
+        scenes (SceneList): Scene ranges for processing.
+    
+    Returns:
+        NumpyArray: Eyelid state labels for each frame (-1: invalid, 0: blink, 1: open, 2: closed).
+    """
     def classify_blink_alternative(frames_data, lid_data, low_lid_data):
         blink_status = [1] * len(frames_data)     
         for i in range(1, len(lid_data) - 1):
@@ -222,7 +263,20 @@ def handle_eyelid(
     return frame_annotation
 
 
-def calculate_axiswise_label(axis, coord, neck_coord, right_offset, left_offset):
+def calculate_axiswise_label(axis: str, coord: float, neck_coord: float, right_offset: float, left_offset: float) -> int:
+    """
+    Calculate spatial position label based on coordinate relative to reference points.
+    
+    Args:
+        axis (str): Axis to evaluate ('x' for lateral, 'y' for vertical).
+        coord (float): Coordinate value to classify.
+        neck_coord (float): Neck reference coordinate (used for x-axis).
+        right_offset (float): Right side offset threshold.
+        left_offset (float): Left side offset threshold.
+    
+    Returns:
+        int: Position label (0-4 for valid positions, -1 for invalid/zero coordinates).
+    """
     if axis == "x":
         if coord == 0:
             frame_annotation = -1

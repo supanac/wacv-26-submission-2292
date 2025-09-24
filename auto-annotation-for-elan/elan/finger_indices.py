@@ -1,4 +1,16 @@
 def get_finger_indices(annotation_tier: str) -> int:
+    """
+    Get keypoint indices for a specific finger based on annotation tier name.
+    
+    Args:
+        annotation_tier (str): Annotation tier name containing finger identifier.
+    
+    Returns:
+        int: List of keypoint indices for the identified finger.
+    
+    Raises:
+        AssertionError: If no finger name is found in the annotation tier.
+    """
     finger_ind_dict = {
         "thumb": [3, 4],
         "index": [6, 8],

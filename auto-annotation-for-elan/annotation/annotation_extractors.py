@@ -1,11 +1,24 @@
-import numpy as np
+from typing import Tuple
 
-from datatypes import NumpyArray
+from datatypes import NumpyArray, TierAnnotation, Annotation
 from elan.merge_labels import merge_label
 from elan.finger_indices import get_finger_indices
 
 
-def extract_wrists_annotation(frame_annotation, axis):
+def extract_wrists_annotation(frame_annotation: NumpyArray, axis: str) -> TierAnnotation:
+    """
+    Convert numerical wrist frame annotations to temporal segments with directional labels.
+    
+    Args:
+        frame_annotation: Array of numerical frame annotations from handle_frame_annotation.
+        axis (str): Axis identifier ('x' for horizontal, 'y' for vertical positioning).
+    
+    Returns:
+        tuple: Three lists containing (start_times, end_times, labels) for segments
+            lasting at least 5 frames. Labels depend on axis:
+            - y-axis: "Down", "Centre", "Up" 
+            - x-axis: "Right", "CentreRight", "CentreCentre", "CentreLeft", "Left"
+    """
     start_time_list = list()
     end_time_list = list()
     label_list = list()
@@ -55,7 +68,25 @@ def extract_wrists_annotation(frame_annotation, axis):
                     label_list.append(label)
     return start_time_list, end_time_list, label_list
 
-def extract_wrists_xy_annotation(frame_annotation_xy, data, annotation_tier):
+def extract_wrists_xy_annotation(frame_annotation_xy: Tuple[NumpyArray, NumpyArray], data: Annotation, annotation_tier: str) -> TierAnnotation:
+    """
+    Convert numerical wrist spatial frame annotations to temporal segments with spatial zone labels.
+    
+    Processes combined horizontal and vertical wrist position data to create spatial zone 
+    annotations. Labels are merged from separate X and Y components and include data 
+    quality indicators for segments with significant missing keypoint data.
+    
+    Args:
+        frame_annotation_xy (Tuple[NumpyArray, NumpyArray]): Tuple of (x_annotations, y_annotations)
+            from handle_frame_annotation processing both axes.
+        data (Annotation): Raw keypoint data for missing value analysis.
+        annotation_tier (str): Annotation tier name identifying wrist side.
+    
+    Returns:
+        TierAnnotation: Three lists containing (start_times, end_times, labels) for all
+            temporal segments. Labels are spatial combinations (e.g., "Right Up", "Centre Left")
+            with "50%_missing" suffix added for segments with ≥50% missing keypoint data.
+    """
     keypoint_ind = 4 if "right" in annotation_tier else 7
     start_time_list = list()
     end_time_list = list()
@@ -126,12 +157,33 @@ def extract_wrists_xy_annotation(frame_annotation_xy, data, annotation_tier):
     return start_time_list, end_time_list, label_list
 
 def extract_fingers_annotation(
-        angles: NumpyArray, 
-        data: NumpyArray, 
+        angles: NumpyArray,
+        data: NumpyArray,
         annotation_tier: str,
         axis: str
-        ):
-    def angle2value(angle: float, axis: str):
+        ) -> TierAnnotation:
+    """
+    Convert finger angle data to temporal segments with directional labels and data quality indicators.
+    
+    Processes finger angles to classify finger positions into directional categories.
+    Includes nested angle2value function that converts angles to discrete position values
+    based on axis-specific thresholds. Adds data quality suffixes for segments with
+    significant missing keypoint data.
+    
+    Args:
+        angles (NumpyArray): Array of finger angles in degrees from handle_angles.
+        data (NumpyArray): Raw keypoint data for missing value analysis.
+        annotation_tier (str): Annotation tier name identifying finger and hand side.
+        axis (str): Axis identifier ('x' for lateral, 'y' for vertical movement).
+    
+    Returns:
+        TierAnnotation: Three lists containing (start_times, end_times, labels) for
+            segments lasting at least 5 frames. Labels are directional:
+            - x-axis: "Left"/"Right" based on angle thresholds
+            - y-axis: "Up"/"Down" based on angle thresholds
+            Quality suffixes added: "50%_missing" or "90%_missing" for poor data segments.
+    """
+    def angle2value(angle: float, axis: str) -> int:
         if angle > 360:
             return -1
         if axis == "x":
@@ -213,7 +265,23 @@ def extract_fingers_annotation(
                     label_list.append(label)
     return start_time_list, end_time_list, label_list
 
-def extract_eyelid_annotation(frame_annotation, axis):
+def extract_eyelid_annotation(frame_annotation: NumpyArray) -> TierAnnotation:
+    """
+    Convert numerical eyelid frame annotations to temporal segments identifying blink events.
+    
+    Processes eyelid state data to extract blink segments (value 0.0) that last longer
+    than 3 frames. Uses a sliding window approach to detect state changes and filter
+    for meaningful blink durations.
+    
+    Args:
+        frame_annotation (NumpyArray): Array of numerical eyelid state values from handle_eyelid
+            (0: blink, 1: open, 2: closed, -1: invalid).
+    
+    Returns:
+        TierAnnotation: Three lists containing (start_times, end_times, labels) for
+            blink segments lasting more than 3 frames. Only blink events (value 0.0)
+            are extracted as annotations.
+    """
     start_time_list = list()
     end_time_list = list()
     label_list = list()  
@@ -228,6 +296,18 @@ def extract_eyelid_annotation(frame_annotation, axis):
             start_ind = i
     return start_time_list, end_time_list, label_list
 
-def extract_eyebrows_annotation(frame_annotation, axis):
+def extract_eyebrows_annotation(frame_annotation: NumpyArray, axis: str) -> TierAnnotation:
+    """
+    Placeholder function for extracting eyebrow annotations from frame data.
+    
+    Args:
+        frame_annotation (NumpyArray): Array of numerical eyebrow frame annotations 
+            from handle_eyebrows.
+        axis (str): Axis identifier for eyebrow movement analysis.
+    
+    Returns:
+        TierAnnotation: Three lists of None values as placeholder. Function not implemented
+            as eyebrow annotations are currently not used in the pipeline.
+    """
     return [None], [None], [None]
 

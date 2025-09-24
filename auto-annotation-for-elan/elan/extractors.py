@@ -1,13 +1,28 @@
 from collections import OrderedDict
+from typing import Tuple, List
 
 import numpy as np
 
-from constants import FPS
+from datatypes import NumpyArray, Number, Annotations, SceneList, EafFile, Timeseries
 
 
 def extract_timeseries(
-        data, all_timeseries, start_frame, end_frame, video_fps, *args, **kwargs
-        ):
+        data: NumpyArray, all_timeseries: List, start_frame: int, end_frame: int, video_fps: Number, *args, **kwargs
+        ) -> Timeseries:
+    """
+    Extract multiple keypoint timeseries from data and add time column.
+    
+    Args:
+        data (NumpyArray): Input keypoints data array.
+        all_timeseries (List): List of timeseries names to extract.
+        start_frame (int): Starting frame index.
+        end_frame (int): Ending frame index.
+        video_fps (Number): Video frames per second for time calculation.
+        *args, **kwargs: Additional arguments passed to extraction function.
+    
+    Returns:
+        Timeseries: Ordered dictionary with extracted timeseries and time column.
+    """
     ret_dict = OrderedDict()
     for ts_name in all_timeseries:
         timeseries = extract_keypoints_timeseries(
@@ -18,7 +33,21 @@ def extract_timeseries(
     ret_dict.move_to_end("time", last=False)
     return ret_dict
 
-def add_annotation(eaf, tier_name, data, start_frame, end_frame, video_fps):
+def add_annotation(eaf: EafFile, tier_name: str, data: NumpyArray, start_frame: int, end_frame: int, video_fps: int) -> None:
+    """
+    Add parsed annotations from data to a specific tier in EAF file.
+    
+    Args:
+        eaf (EafFile): ELAN EAF object to modify.
+        tier_name (str): Name of the tier to add annotations to.
+        data (NumpyArray): Annotation data array.
+        start_frame (int): Starting frame index.
+        end_frame (int): Ending frame index.
+        video_fps (int): Video frames per second for time conversion.
+    
+    Returns:
+        None
+    """
     start_time_list, end_time_list, label_list = parse_data(
         tier_name, data, start_frame, end_frame
         )
@@ -32,7 +61,19 @@ def add_annotation(eaf, tier_name, data, start_frame, end_frame, video_fps):
         eaf.add_annotation(tier_name, start_time_ms, end_time_ms, label)
     return None
 
-def parse_data(tier_name, annotations, start_frame, end_frame):
+def parse_data(tier_name: str, annotations: Annotations, start_frame: int, end_frame: int) -> Tuple[List, List, List]:
+    """
+    Parse and filter annotation data within specified frame range.
+    
+    Args:
+        tier_name (str): Name of annotation tier to extract.
+        annotations (Annotations): Annotation data dictionary.
+        start_frame (int): Starting frame for filtering.
+        end_frame (int): Ending frame for filtering.
+    
+    Returns:
+        Tuple[List, List, List]: Start times, end times, and labels within frame range.
+    """
     annotation = extract_frame_annotation(tier_name, annotations)
     start_time_list = list()
     end_time_list = list()
@@ -47,7 +88,17 @@ def parse_data(tier_name, annotations, start_frame, end_frame):
         annotation_list.append(label)
     return start_time_list, end_time_list, annotation_list
 
-def extract_frame_annotation(tier_name, annotations):
+def extract_frame_annotation(tier_name: str, annotations: Annotations) -> NumpyArray:
+    """
+    Extract specific annotation data based on tier name.
+    
+    Args:
+        tier_name (str): Name of the annotation tier to extract.
+        annotations (Annotations): Annotation data container.
+    
+    Returns:
+        NumpyArray: Annotation data array for the specified tier.
+    """
     if "Left Wrist Vertical Direction Threshold" == tier_name:
         return annotations["left_wrist_direction_y_thr"][()]["annotation"]
     elif "Left Wrist Lateral Direction Threshold" == tier_name:
@@ -166,8 +217,24 @@ def extract_frame_annotation(tier_name, annotations):
         return annotations["left_eyelid_annotation_y"][()]["annotation"]
 
 def extract_keypoints_timeseries(
-        data, keypoint_name, start_frame, end_frame, *args, **kwargs
-        ):
+        data: NumpyArray, keypoint_name: str, start_frame: int, end_frame: int, *args, **kwargs
+        ) -> NumpyArray:
+    """
+    Extract specific keypoint timeseries data based on keypoint name and frame range.
+    
+    Args:
+        data (NumpyArray): Input keypoints data array.
+        keypoint_name (str): Name of the keypoint to extract.
+        start_frame (int): Starting frame index.
+        end_frame (int): Ending frame index.
+        *args, **kwargs: Additional arguments including 'all_scenes' or 'annotations'.
+    
+    Returns:
+        NumpyArray: Extracted keypoint timeseries with data only in specified frame range.
+    
+    Raises:
+        ValueError: If keypoint name is not recognized.
+    """
     if "all_scenes" in kwargs:
         all_scenes = kwargs["all_scenes"]
     else:
@@ -272,7 +339,18 @@ def extract_keypoints_timeseries(
     augmented_ret_data[start_frame:end_frame] = ret_data[start_frame:end_frame]
     return augmented_ret_data
 
-def extract_eyebrows_coords(eyebrow, data, all_scenes):
+def extract_eyebrows_coords(eyebrow: str, data: NumpyArray, all_scenes: SceneList) -> NumpyArray:
+    """
+    Extract and normalize eyebrow coordinates relative to eyelid position across scenes.
+    
+    Args:
+        eyebrow (str): Eyebrow identifier ("Right" or "Left").
+        data (NumpyArray): Face keypoints data array.
+        all_scenes (SceneList): List of scene frame ranges.
+    
+    Returns:
+        NumpyArray: Normalized eyebrow coordinates averaged across keypoints.
+    """
     if "Right" in eyebrow:
         eyebrow_start_ind, eyebrow_end_ind = 17, 22
         eyelid_start_ind, eyelid_end_ind = 40, 42

@@ -1,13 +1,26 @@
+from typing import Dict
+
 import numpy as np
 
-from datatypes import NumpyArray
+from datatypes import NumpyArray, SceneList
 from elan.finger_indices import get_finger_indices
 
-def calculate_speed(
-        annotation_tier: str, 
-        axis: str, 
-        data: NumpyArray, 
-        scenes: list) -> tuple:
+def calculate_speed(annotation_tier: str, axis: str, data: NumpyArray, scenes: SceneList) -> Dict:
+    """
+    Calculate speed annotation for wrist or finger keypoints along specified axis.
+    
+    Args:
+        annotation_tier (str): Annotation tier name identifying body part and side.
+        axis (str): Axis for speed calculation ('x' or 'y').
+        data (NumpyArray): Keypoint data array.
+        scenes (SceneList): List of scene frame ranges.
+    
+    Returns:
+        Dict: Dictionary containing speed annotation data.
+    
+    Raises:
+        ValueError: If keypoint name format is invalid.
+    """
     if "wrist" in annotation_tier:
         keypoint_data = data["pose_keypoints_2d_norm"]
         keypoint_ind = 4 if "right" in annotation_tier else 7
@@ -24,12 +37,19 @@ def calculate_speed(
         )
     return {"annotation": speed}
 
-def calculate_axis_speed(
-        axis: str,
-        data: NumpyArray, 
-        joint_ind: int,
-        scenes: list,
-        ) -> tuple:
+def calculate_axis_speed(axis: str, data: NumpyArray, joint_ind: int, scenes: SceneList) -> NumpyArray:
+    """
+    Calculate movement speed for a specific joint along given axis across scenes.
+    
+    Args:
+        axis (str): Axis for speed calculation ('x', 'y', or other for magnitude).
+        data (NumpyArray): Keypoint coordinate data.
+        joint_ind (int): Index of the joint to calculate speed for.
+        scenes (SceneList): List of scene frame ranges.
+    
+    Returns:
+        NumpyArray: Speed values for each frame, zero outside scenes.
+    """
     speed = np.zeros(len(data))
     if data.shape[-1] == 3:
         coords = data[:, joint_ind, :-1]
