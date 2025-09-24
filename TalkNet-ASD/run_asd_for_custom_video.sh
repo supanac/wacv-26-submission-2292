@@ -3,8 +3,8 @@
 #SBATCH --gres=gpu:a40:1
 #SBATCH --time=01:00:00
 #SBACTH --export=NONE
-#SBATCH --job-name=for_raul
-#SBATCH --output /home/atuin/b105dc/data/datasets/talknet_examples_for_raul/logs/asd_on_%x_job_id_%j.out
+#SBATCH --job-name=talknet_asd
+#SBATCH --output /path/to/slurm/ouput
 
 unset SLURM_EXPORT_ENV
 
@@ -15,7 +15,8 @@ export LC_ALL='en_US.UTF-8'
 VIDEO_PATH=$1
 CASE_ID=$(basename $VIDEO_PATH)
 CASE_ID="${CASE_ID%.*}"
-SAVE_TO="/home/atuin/b105dc/data/datasets/talknet_examples_for_raul/output/$CASE_ID"
+SAVE_TO="/where/to/save/the/output/file"
+TALKNET_ASD_HOME="/path/to/the/talknet/folder"
 DEVICE=cuda
 
 # Create output folder
@@ -29,7 +30,7 @@ module load ffmpeg
 # Create python environment
 RUN_FOLDER=$(pwd)
 module load python
-cd /tmp/$SLURM_JOB_ID.alex # $TMPDIR
+cd $TMPDIR
 python -m venv venvs/foo
 source venvs/foo/bin/activate
 python -m pip install gdown scikit-learn --quiet
@@ -54,14 +55,13 @@ if [ -f $SAVE_TO/"tracks.pckl" ]; then
     exit 1
 fi
 
-
 mkdir $TMPDIR/{pyavi,pyframes,pywork}
 
 ffmpeg -y -i $VIDEO_PATH -qscale:v 2 -threads $THREADS -async 1 -r 25 $TMPDIR/temp_video_25fps.avi -loglevel panic
 ffmpeg -y -i $VIDEO_PATH -qscale:a 0 -ac 1 -vn -threads $THREADS -ar 16000 $TMPDIR/temp_audio_16khz.wav -loglevel panic
 ffmpeg -y -i $TMPDIR/temp_video_25fps.avi -qscale:v 2 -threads $THREADS -f image2 $TMPDIR/pyframes/%07d.jpg -loglevel panic
 
-cd /home/hpc/b105dc/b105dc10/TalkNet-ASD
+cd $TALKNET_ASD_HOME
 python run_talknet.py \
     --pathToScenes $PATH_TO_SCENES \
     --videoName temp_video_25fps \

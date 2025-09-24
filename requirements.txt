@@ -1,0 +1,7 @@
+numpy
+natsort
+pyyaml
+omegaconf
+pandas
+pympi-ling
+scenedetect
